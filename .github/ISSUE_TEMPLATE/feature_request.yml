@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a new feature or improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? Tell us about it!
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why do you want this? What would it unlock for you?
+      placeholder: I often find myself having to... and it would save a lot of time if...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What needs to be true for this to be considered done?
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds you've tried?
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, examples, links...
+    validations:
+      required: false
