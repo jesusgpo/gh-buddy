@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build ./...
+
+  validate-version:
+    name: Validate version bump
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version file if release PR
+        run: |
+          files=$(git diff --name-only origin/main...HEAD)
+          PR_TITLE="${{ github.event.pull_request.title }}"
+
+          if echo "$PR_TITLE" | grep -qi "^release:"; then
+            if ! echo "$files" | grep -q "^version$"; then
+              echo "❌ PR title starts with 'release:' but the 'version' file was not changed."
+              exit 1
+            fi
+            VERSION=$(cat version)
+            if ! echo "$VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "❌ Version '$VERSION' does not follow semver (e.g. v1.2.3)."
+              exit 1
+            fi
+            echo "✅ Version file updated to $VERSION"
+          else
+            echo "ℹ️  Not a release PR, skipping version check."
+          fi
