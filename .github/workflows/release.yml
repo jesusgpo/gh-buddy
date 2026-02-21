@@ -5,6 +5,7 @@ on:
     types: [closed]
     branches: [main]
     paths: [version]
+  workflow_dispatch:
 
 permissions:
   contents: write
