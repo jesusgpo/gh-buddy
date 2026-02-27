@@ -24,7 +24,7 @@ func newCreateBranchCmd() *cobra.Command {
 		Long: `Create a local branch following naming conventions.
 
 If an issue number is provided, the branch name will be generated from the issue title.
-The branch type can be one of: feature, bugfix, hotfix, release, chore, docs, refactor, test.`,
+The branch type can be one of: feature, bugfix, hotfix, release, chore, docs, refactor, test, internal.`,
 		Example: `  # Create a branch from issue #42
   gh buddy create-branch --issue 42
 
@@ -42,7 +42,7 @@ The branch type can be one of: feature, bugfix, hotfix, release, chore, docs, re
 	}
 
 	cmd.Flags().IntVarP(&issueNumber, "issue", "i", 0, "issue number to create the branch from")
-	cmd.Flags().StringVarP(&issueType, "type", "t", "", "branch type (feature, bugfix, hotfix, release, chore, docs, refactor, test)")
+	cmd.Flags().StringVarP(&issueType, "type", "t", "", "branch type (feature, bugfix, hotfix, release, chore, docs, refactor, test, internal)")
 	cmd.Flags().StringVarP(&baseBranch, "base", "b", "", "base branch to create from (default: repo default branch)")
 
 	return cmd
@@ -184,6 +184,8 @@ func inferIssueType(issue *ghapi.Issue) string {
 			return "test"
 		case contains(name, "chore", "maintenance"):
 			return "chore"
+		case contains(name, "internal"):
+			return "internal"
 		}
 	}
 	return ""

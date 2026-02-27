@@ -18,11 +18,12 @@ const (
 	Docs     IssueType = "docs"
 	Refactor IssueType = "refactor"
 	Test     IssueType = "test"
+	Internal IssueType = "internal"
 )
 
 // AllIssueTypes returns all valid issue types.
 func AllIssueTypes() []IssueType {
-	return []IssueType{Feature, Bugfix, Hotfix, Release, Chore, Docs, Refactor, Test}
+	return []IssueType{Feature, Bugfix, Hotfix, Release, Chore, Docs, Refactor, Test, Internal}
 }
 
 // AllIssueTypeStrings returns all valid issue types as strings.
