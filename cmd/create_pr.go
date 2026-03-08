@@ -119,7 +119,7 @@ func runCreatePR(issueNumber int, baseBranch, title, body string, draft bool, la
 		if !useDefaults {
 			fmt.Println("\n--- PR body preview ---")
 			fmt.Println(body)
-			fmt.Println("--- end preview ---\n")
+			fmt.Print("--- end preview ---\n\n")
 			if !prompt.Confirm("Use this PR body?", true) {
 				body = prompt.Input("PR body", "")
 			}

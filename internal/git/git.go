@@ -110,16 +110,31 @@ func FetchLatest(remote string) error {
 	return nil
 }
 
+
+// SetUpstreamTracking configures the local branch to track the remote branch.
+func SetUpstreamTracking(remote, branch string) error {
+	if err := exec.Command("git", "fetch", remote, branch).Run(); err != nil {
+		return fmt.Errorf("failed to fetch %s/%s: %w", remote, branch, err)
+	}
+	upstream := fmt.Sprintf("%s/%s", remote, branch)
+	if err := exec.Command("git", "branch", "--set-upstream-to="+upstream, branch).Run(); err != nil {
+		return fmt.Errorf("failed to set upstream tracking to %s: %w", upstream, err)
+	}
+	return nil
+}
+
 // CreateBranchFrom creates a new branch from a given base branch and checks it out.
 func CreateBranchFrom(branchName, baseBranch, remote string) error {
-	// Make sure we have the latest base
-	if err := FetchLatest(remote); err != nil {
-		return err
+	// Fetch the specific base branch to ensure the remote ref is up to date.
+	fetchCmd := exec.Command("git", "fetch", remote, baseBranch)
+	if out, err := fetchCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to fetch %s/%s: %w\n%s", remote, baseBranch, err, strings.TrimSpace(string(out)))
 	}
+
 	ref := fmt.Sprintf("%s/%s", remote, baseBranch)
 	cmd := exec.Command("git", "checkout", "-b", branchName, ref)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to create branch %q from %q: %w", branchName, ref, err)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to create branch %q from %q: %w\n%s", branchName, ref, err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }

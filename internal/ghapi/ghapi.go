@@ -121,3 +121,18 @@ func CurrentUser() (string, error) {
 	}
 	return strings.TrimSpace(string(out)), nil
 }
+
+// LinkBranchToIssue creates a remote branch on GitHub linked to the given issue
+// using `gh issue develop`. The branch must NOT exist on the remote yet.
+func LinkBranchToIssue(repo string, issueNumber int, branchName, baseBranch string) error {
+	out, err := exec.Command(
+		"gh", "issue", "develop", strconv.Itoa(issueNumber),
+		"--repo", repo,
+		"--name", branchName,
+		"--base", baseBranch,
+	).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s: %w", strings.TrimSpace(string(out)), err)
+	}
+	return nil
+}
