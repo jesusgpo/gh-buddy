@@ -122,10 +122,22 @@ func runCreateBranch(issueNumber int, issueType, baseBranch string) error {
 	// Ask to push
 	shouldPush := useDefaults || prompt.Confirm("Push branch to origin?", true)
 	if shouldPush {
-		if err := git.PushBranch("origin", branchName); err != nil {
-			return err
+		// Use `gh issue develop` to push the branch to GitHub and link it to the
+		// issue in one step. If that fails, fall back to a regular git push.
+		if linkErr := ghapi.LinkBranchToIssue(repo, issueNumber, branchName, baseBranch); linkErr != nil {
+			fmt.Printf("⚠️  Could not create linked branch via gh issue develop (%v), falling back to git push\n", linkErr)
+			if err := git.PushBranch("origin", branchName); err != nil {
+				return err
+			}
+			fmt.Println("🚀 Branch pushed to origin")
+		} else {
+			// Branch now exists on remote; configure local tracking
+			if err := git.SetUpstreamTracking("origin", branchName); err != nil {
+				fmt.Printf("⚠️  Branch pushed but could not set upstream tracking: %v\n", err)
+			}
+			fmt.Println("🚀 Branch pushed to origin")
+			fmt.Printf("🔗 Branch linked to issue #%d\n", issueNumber)
 		}
-		fmt.Println("🚀 Branch pushed to origin")
 	}
 
 	return nil
