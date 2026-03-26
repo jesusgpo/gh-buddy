@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/jesusgpo/gh-buddy/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +36,7 @@ consistent naming conventions, directly from GitHub issues.`,
 func Execute() {
 	rootCmd := NewRootCmd()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
+		ui.Error("%v", err)
 		os.Exit(1)
 	}
 }

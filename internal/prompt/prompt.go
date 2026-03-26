@@ -1,59 +1,53 @@
 package prompt
 
 import (
-	"bufio"
-	"fmt"
-	"os"
-	"strconv"
-	"strings"
+	"github.com/pterm/pterm"
 )
 
-var reader = bufio.NewReader(os.Stdin)
-
-// Confirm asks the user for a yes/no confirmation.
+// Confirm asks the user for a yes/no confirmation using an interactive prompt.
 func Confirm(message string, defaultYes bool) bool {
-	suffix := " [y/N]: "
+	defaultText := "No"
 	if defaultYes {
-		suffix = " [Y/n]: "
+		defaultText = "Yes"
 	}
-	fmt.Print(message + suffix)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(strings.ToLower(input))
-
-	if input == "" {
+	result, err := pterm.DefaultInteractiveConfirm.
+		WithDefaultText(message).
+		WithDefaultValue(defaultYes).
+		WithConfirmText("Yes").
+		WithRejectText("No").
+		Show(defaultText)
+	if err != nil {
 		return defaultYes
 	}
-	return input == "y" || input == "yes"
+	return result
 }
 
-// Input asks the user for text input.
+// Input asks the user for text input with an optional default value.
 func Input(message, defaultVal string) string {
-	if defaultVal != "" {
-		fmt.Printf("%s [%s]: ", message, defaultVal)
-	} else {
-		fmt.Printf("%s: ", message)
-	}
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	if input == "" {
+	result, err := pterm.DefaultInteractiveTextInput.
+		WithDefaultText(defaultVal).
+		WithDefaultValue(defaultVal).
+		Show(message)
+	if err != nil || result == "" {
 		return defaultVal
 	}
-	return input
+	return result
 }
 
-// Select asks the user to select from a list of options. Returns the index.
+// Select asks the user to select from a list of options using arrow keys.
+// Returns the index of the selected option.
 func Select(message string, options []string) (int, error) {
-	fmt.Println(message)
+	selected, err := pterm.DefaultInteractiveSelect.
+		WithOptions(options).
+		WithMaxHeight(10).
+		Show(message)
+	if err != nil {
+		return -1, err
+	}
 	for i, opt := range options {
-		fmt.Printf("  [%d] %s\n", i+1, opt)
+		if opt == selected {
+			return i, nil
+		}
 	}
-	fmt.Print("Choose an option: ")
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-
-	idx, err := strconv.Atoi(input)
-	if err != nil || idx < 1 || idx > len(options) {
-		return -1, fmt.Errorf("invalid selection: %s", input)
-	}
-	return idx - 1, nil
+	return -1, nil
 }

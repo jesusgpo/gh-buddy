@@ -8,6 +8,7 @@ import (
 	"github.com/jesusgpo/gh-buddy/internal/ghapi"
 	"github.com/jesusgpo/gh-buddy/internal/git"
 	"github.com/jesusgpo/gh-buddy/internal/prompt"
+	"github.com/jesusgpo/gh-buddy/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -68,7 +69,7 @@ func runCreateBranch(issueNumber int, issueType, baseBranch string) error {
 		return err
 	}
 
-	fmt.Printf("📋 Issue #%d: %s\n", issue.Number, issue.Title)
+	ui.IssuePanel(issue.Number, issue.Title)
 
 	// Determine issue type
 	if issueType == "" {
@@ -110,14 +111,14 @@ func runCreateBranch(issueNumber int, issueType, baseBranch string) error {
 		branchName = prompt.Input("Branch name", branchName)
 	}
 
-	fmt.Printf("🌿 Creating branch: %s (from %s)\n", branchName, baseBranch)
+	ui.BranchPanel(branchName, baseBranch)
 
 	// Create the branch
 	if err := git.CreateBranchFrom(branchName, baseBranch, "origin"); err != nil {
 		return err
 	}
 
-	fmt.Printf("✅ Branch %q created and checked out successfully!\n", branchName)
+	ui.Success("Branch %q created and checked out successfully!", branchName)
 
 	// Ask to push
 	shouldPush := useDefaults || prompt.Confirm("Push branch to origin?", true)
@@ -125,18 +126,18 @@ func runCreateBranch(issueNumber int, issueType, baseBranch string) error {
 		// Use `gh issue develop` to push the branch to GitHub and link it to the
 		// issue in one step. If that fails, fall back to a regular git push.
 		if linkErr := ghapi.LinkBranchToIssue(repo, issueNumber, branchName, baseBranch); linkErr != nil {
-			fmt.Printf("⚠️  Could not create linked branch via gh issue develop (%v), falling back to git push\n", linkErr)
+			ui.Warning("Could not create linked branch via gh issue develop (%v), falling back to git push", linkErr)
 			if err := git.PushBranch("origin", branchName); err != nil {
 				return err
 			}
-			fmt.Println("🚀 Branch pushed to origin")
+			ui.Success("Branch pushed to origin")
 		} else {
 			// Branch now exists on remote; configure local tracking
 			if err := git.SetUpstreamTracking("origin", branchName); err != nil {
-				fmt.Printf("⚠️  Branch pushed but could not set upstream tracking: %v\n", err)
+				ui.Warning("Branch pushed but could not set upstream tracking: %v", err)
 			}
-			fmt.Println("🚀 Branch pushed to origin")
-			fmt.Printf("🔗 Branch linked to issue #%d\n", issueNumber)
+			ui.Success("Branch pushed to origin")
+			ui.Success("Branch linked to issue #%d", issueNumber)
 		}
 	}
 
