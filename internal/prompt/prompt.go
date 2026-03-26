@@ -6,16 +6,9 @@ import (
 
 // Confirm asks the user for a yes/no confirmation using an interactive prompt.
 func Confirm(message string, defaultYes bool) bool {
-	defaultText := "No"
-	if defaultYes {
-		defaultText = "Yes"
-	}
 	result, err := pterm.DefaultInteractiveConfirm.
-		WithDefaultText(message).
 		WithDefaultValue(defaultYes).
-		WithConfirmText("Yes").
-		WithRejectText("No").
-		Show(defaultText)
+		Show(message)
 	if err != nil {
 		return defaultYes
 	}
@@ -37,10 +30,19 @@ func Input(message, defaultVal string) string {
 // Select asks the user to select from a list of options using arrow keys.
 // Returns the index of the selected option.
 func Select(message string, options []string) (int, error) {
-	selected, err := pterm.DefaultInteractiveSelect.
+	return SelectWithDefault(message, options, -1)
+}
+
+// SelectWithDefault asks the user to select from a list with a pre-selected default (0-based index).
+// Returns the index of the selected option.
+func SelectWithDefault(message string, options []string, defaultIdx int) (int, error) {
+	printer := pterm.DefaultInteractiveSelect.
 		WithOptions(options).
-		WithMaxHeight(10).
-		Show(message)
+		WithMaxHeight(10)
+	if defaultIdx >= 0 && defaultIdx < len(options) {
+		printer = printer.WithDefaultOption(options[defaultIdx])
+	}
+	selected, err := printer.Show(message)
 	if err != nil {
 		return -1, err
 	}

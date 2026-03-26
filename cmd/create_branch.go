@@ -76,9 +76,16 @@ func runCreateBranch(issueNumber int, issueType, baseBranch string) error {
 		issueType = inferIssueType(issue)
 	}
 
-	if issueType == "" && !useDefaults {
+	if !useDefaults {
 		types := branch.AllIssueTypeStrings()
-		idx, err := prompt.Select("Select branch type:", types)
+		defaultIdx := 0
+		for i, t := range types {
+			if t == issueType {
+				defaultIdx = i
+				break
+			}
+		}
+		idx, err := prompt.SelectWithDefault("Select branch type:", types, defaultIdx)
 		if err != nil {
 			return err
 		}
