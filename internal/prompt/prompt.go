@@ -1,59 +1,55 @@
 package prompt
 
 import (
-	"bufio"
-	"fmt"
-	"os"
-	"strconv"
-	"strings"
+	"github.com/pterm/pterm"
 )
 
-var reader = bufio.NewReader(os.Stdin)
-
-// Confirm asks the user for a yes/no confirmation.
+// Confirm asks the user for a yes/no confirmation using an interactive prompt.
 func Confirm(message string, defaultYes bool) bool {
-	suffix := " [y/N]: "
-	if defaultYes {
-		suffix = " [Y/n]: "
-	}
-	fmt.Print(message + suffix)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(strings.ToLower(input))
-
-	if input == "" {
+	result, err := pterm.DefaultInteractiveConfirm.
+		WithDefaultValue(defaultYes).
+		Show(message)
+	if err != nil {
 		return defaultYes
 	}
-	return input == "y" || input == "yes"
+	return result
 }
 
-// Input asks the user for text input.
+// Input asks the user for text input with an optional default value.
 func Input(message, defaultVal string) string {
-	if defaultVal != "" {
-		fmt.Printf("%s [%s]: ", message, defaultVal)
-	} else {
-		fmt.Printf("%s: ", message)
-	}
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	if input == "" {
+	result, err := pterm.DefaultInteractiveTextInput.
+		WithDefaultText(defaultVal).
+		WithDefaultValue(defaultVal).
+		Show(message)
+	if err != nil || result == "" {
 		return defaultVal
 	}
-	return input
+	return result
 }
 
-// Select asks the user to select from a list of options. Returns the index.
+// Select asks the user to select from a list of options using arrow keys.
+// Returns the index of the selected option.
 func Select(message string, options []string) (int, error) {
-	fmt.Println(message)
-	for i, opt := range options {
-		fmt.Printf("  [%d] %s\n", i+1, opt)
-	}
-	fmt.Print("Choose an option: ")
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
+	return SelectWithDefault(message, options, -1)
+}
 
-	idx, err := strconv.Atoi(input)
-	if err != nil || idx < 1 || idx > len(options) {
-		return -1, fmt.Errorf("invalid selection: %s", input)
+// SelectWithDefault asks the user to select from a list with a pre-selected default (0-based index).
+// Returns the index of the selected option.
+func SelectWithDefault(message string, options []string, defaultIdx int) (int, error) {
+	printer := pterm.DefaultInteractiveSelect.
+		WithOptions(options).
+		WithMaxHeight(10)
+	if defaultIdx >= 0 && defaultIdx < len(options) {
+		printer = printer.WithDefaultOption(options[defaultIdx])
 	}
-	return idx - 1, nil
+	selected, err := printer.Show(message)
+	if err != nil {
+		return -1, err
+	}
+	for i, opt := range options {
+		if opt == selected {
+			return i, nil
+		}
+	}
+	return -1, nil
 }

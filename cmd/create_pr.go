@@ -9,6 +9,7 @@ import (
 	"github.com/jesusgpo/gh-buddy/internal/ghapi"
 	"github.com/jesusgpo/gh-buddy/internal/git"
 	"github.com/jesusgpo/gh-buddy/internal/prompt"
+	"github.com/jesusgpo/gh-buddy/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -70,7 +71,7 @@ func runCreatePR(issueNumber int, baseBranch, title, body string, draft bool, la
 		return err
 	}
 
-	fmt.Printf("🌿 Current branch: %s\n", currentBranch)
+	ui.Info("Current branch: %s", currentBranch)
 
 	// Try to detect issue number from branch name
 	if issueNumber == 0 {
@@ -82,9 +83,9 @@ func runCreatePR(issueNumber int, baseBranch, title, body string, draft bool, la
 	if issueNumber > 0 {
 		issue, err = ghapi.GetIssue(repo, issueNumber)
 		if err != nil {
-			fmt.Printf("⚠️  Could not fetch issue #%d: %v\n", issueNumber, err)
+			ui.Warning("Could not fetch issue #%d: %v", issueNumber, err)
 		} else {
-			fmt.Printf("📋 Linked issue #%d: %s\n", issue.Number, issue.Title)
+			ui.IssuePanel(issue.Number, issue.Title)
 		}
 	}
 
@@ -117,9 +118,7 @@ func runCreatePR(issueNumber int, baseBranch, title, body string, draft bool, la
 	if body == "" {
 		body = generatePRBody(issue)
 		if !useDefaults {
-			fmt.Println("\n--- PR body preview ---")
-			fmt.Println(body)
-			fmt.Print("--- end preview ---\n\n")
+			ui.BodyPreview(body)
 			if !prompt.Confirm("Use this PR body?", true) {
 				body = prompt.Input("PR body", "")
 			}
@@ -131,24 +130,23 @@ func runCreatePR(issueNumber int, baseBranch, title, body string, draft bool, la
 		draft = prompt.Confirm("Create as draft?", false)
 	}
 
-	fmt.Printf("\n📝 Creating PR: %s\n", title)
-	fmt.Printf("   %s → %s\n", currentBranch, baseBranch)
-	if draft {
-		fmt.Println("   📌 Draft PR")
-	}
+	ui.PRSummaryPanel(title, currentBranch, baseBranch, draft)
 
 	if !useDefaults {
 		if !prompt.Confirm("Proceed?", true) {
-			fmt.Println("Cancelled.")
+			ui.Warning("Cancelled.")
 			return nil
 		}
 	}
 
 	// Push the branch first
-	fmt.Println("🚀 Pushing branch to origin...")
-	if err := git.PushBranch("origin", currentBranch); err != nil {
+	spinner, _ := ui.StartSpinner("Pushing branch to origin...")
+	pushErr := git.PushBranch("origin", currentBranch)
+	if pushErr != nil {
 		// Branch might already be pushed, continue
-		fmt.Printf("⚠️  Push warning: %v (continuing anyway)\n", err)
+		spinner.Fail(fmt.Sprintf("Push warning: %v (continuing anyway)", pushErr))
+	} else {
+		spinner.Success("Branch pushed to origin")
 	}
 
 	pr, err := ghapi.CreatePR(repo, title, body, baseBranch, currentBranch, draft, labels)
@@ -156,7 +154,7 @@ func runCreatePR(issueNumber int, baseBranch, title, body string, draft bool, la
 		return err
 	}
 
-	fmt.Printf("✅ Pull request created: %s\n", pr.URL)
+	ui.Success("Pull request created: %s", pr.URL)
 	return nil
 }
 
